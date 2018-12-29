@@ -1,17 +1,16 @@
 <?php
-/**
- * GitScrum v0.1.
- *
- * @author  Renato Marinho <renato.marinho@s2move.com>
- * @license http://opensource.org/licenses/GPL-3.0 GPLv3
- */
 
 namespace GitScrum\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use GitScrum\Scopes\GlobalScope;
+use GitScrum\Presenters\GlobalPresenter;
 
 class ConfigIssueEffort extends Model
 {
+    use GlobalScope;
+    use GlobalPresenter;
+
     /**
      * The database table used by the model.
      *
@@ -42,6 +41,6 @@ class ConfigIssueEffort extends Model
 
     public function issues()
     {
-        return $this->hasMany(\GitScrum\Models\Issue::class, 'config_issue_effort_id', 'id');
+        return $this->hasMany(Issue::class, 'config_issue_effort_id', 'id');
     }
 }

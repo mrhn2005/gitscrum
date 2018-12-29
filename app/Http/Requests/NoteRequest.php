@@ -1,10 +1,4 @@
 <?php
-/**
- * GitScrum v0.1.
- *
- * @author  Renato Marinho <renato.marinho@s2move.com>
- * @license http://opensource.org/licenses/GPL-3.0 GPLv3
- */
 
 namespace GitScrum\Http\Requests;
 
@@ -42,8 +36,8 @@ class NoteRequest extends FormRequest
     public function messages()
     {
         return [
-            'frm_notes_title.required' => trans('Field cannot be blank'),
-            'frm_notes_title.min' => trans('Field must be at least 2 characters'),
+            'frm_notes_title.required' => trans('gitscrum.field-cannot-be-blank'),
+            'frm_notes_title.min' => trans('gitscrum.field-must-be-at-least-2-characters'),
         ];
     }
 

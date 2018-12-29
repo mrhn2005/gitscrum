@@ -1,17 +1,16 @@
 <?php
-/**
- * GitScrum v0.1.
- *
- * @author  Renato Marinho <renato.marinho@s2move.com>
- * @license http://opensource.org/licenses/GPL-3.0 GPLv3
- */
 
 namespace GitScrum\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use GitScrum\Scopes\GlobalScope;
+use GitScrum\Presenters\GlobalPresenter;
 
 class PullRequest extends Model
 {
+    use GlobalScope;
+    use GlobalPresenter;
+
     /**
      * The database table used by the model.
      *
@@ -24,7 +23,9 @@ class PullRequest extends Model
      *
      * @var array
      */
-    protected $fillable = ['provider_id', 'head_branch_id', 'base_branch_id', 'user_id', 'product_backlog_id', 'number', 'url', 'html_url', 'issue_url', 'commits_url', 'state', 'title', 'body', 'github_created_at', 'github_updated_at', 'deleted_at'];
+    protected $fillable = ['provider_id', 'head_branch_id', 'base_branch_id', 'user_id', 'product_backlog_id', 'number',
+        'url', 'html_url', 'issue_url', 'commits_url', 'state', 'title', 'body', 'github_created_at', 'github_updated_at',
+        'deleted_at'];
 
     /**
      * The attributes excluded from the model's JSON form.
@@ -52,21 +53,21 @@ class PullRequest extends Model
 
     public function baseBranch()
     {
-        return $this->belongsTo(\GitScrum\Models\Branch::class, 'base_branch_id', 'id');
+        return $this->belongsTo(Branch::class, 'base_branch_id', 'id');
     }
 
     public function headBranch()
     {
-        return $this->belongsTo(\GitScrum\Models\Branch::class, 'head_branch_id', 'id');
+        return $this->belongsTo(Branch::class, 'head_branch_id', 'id');
     }
 
     public function repository()
     {
-        return $this->belongsTo(\GitScrum\Models\ProductBacklog::class, 'product_backlog_id', 'id');
+        return $this->belongsTo(ProductBacklog::class, 'product_backlog_id', 'id');
     }
 
     public function user()
     {
-        return $this->hasOne(\GitScrum\Models\User::class, 'id', 'user_id');
+        return $this->hasOne(User::class, 'id', 'user_id');
     }
 }

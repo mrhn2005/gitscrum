@@ -1,6 +1,6 @@
 <?php
 /*
- * This file is part of the Comparator package.
+ * This file is part of sebastian/comparator.
  *
  * (c) Sebastian Bergmann <sebastian@phpunit.de>
  *
@@ -10,5 +10,6 @@
 
 namespace SebastianBergmann\Comparator;
 
-class TestClass {
+class TestClass
+{
 }

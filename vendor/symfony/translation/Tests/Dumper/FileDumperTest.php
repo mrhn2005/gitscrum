@@ -11,10 +11,11 @@
 
 namespace Symfony\Component\Translation\Tests\Dumper;
 
-use Symfony\Component\Translation\MessageCatalogue;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Translation\Dumper\FileDumper;
+use Symfony\Component\Translation\MessageCatalogue;
 
-class FileDumperTest extends \PHPUnit_Framework_TestCase
+class FileDumperTest extends TestCase
 {
     public function testDump()
     {
@@ -26,30 +27,33 @@ class FileDumperTest extends \PHPUnit_Framework_TestCase
         $dumper = new ConcreteFileDumper();
         $dumper->dump($catalogue, array('path' => $tempDir));
 
-        $this->assertTrue(file_exists($tempDir.'/messages.en.concrete'));
+        $this->assertFileExists($tempDir.'/messages.en.concrete');
+
+        @unlink($tempDir.'/messages.en.concrete');
     }
 
-    /**
-     * @group legacy
-     */
-    public function testDumpBackupsFileIfExisting()
+    public function testDumpIntl()
     {
         $tempDir = sys_get_temp_dir();
-        $file = $tempDir.'/messages.en.concrete';
-        $backupFile = $file.'~';
-
-        @touch($file);
 
         $catalogue = new MessageCatalogue('en');
-        $catalogue->add(array('foo' => 'bar'));
+        $catalogue->add(array('foo' => 'bar'), 'd1');
+        $catalogue->add(array('bar' => 'foo'), 'd1+intl-icu');
+        $catalogue->add(array('bar' => 'foo'), 'd2+intl-icu');
 
         $dumper = new ConcreteFileDumper();
+        @unlink($tempDir.'/d2.en.concrete');
         $dumper->dump($catalogue, array('path' => $tempDir));
 
-        $this->assertFileExists($backupFile);
+        $this->assertStringEqualsFile($tempDir.'/d1.en.concrete', 'foo=bar');
+        @unlink($tempDir.'/d1.en.concrete');
 
-        @unlink($file);
-        @unlink($backupFile);
+        $this->assertStringEqualsFile($tempDir.'/d1+intl-icu.en.concrete', 'bar=foo');
+        @unlink($tempDir.'/d1+intl-icu.en.concrete');
+
+        $this->assertFileNotExists($tempDir.'/d2.en.concrete');
+        $this->assertStringEqualsFile($tempDir.'/d2+intl-icu.en.concrete', 'bar=foo');
+        @unlink($tempDir.'/d2+intl-icu.en.concrete');
     }
 
     public function testDumpCreatesNestedDirectoriesAndFile()
@@ -76,7 +80,7 @@ class ConcreteFileDumper extends FileDumper
 {
     public function formatCatalogue(MessageCatalogue $messages, $domain, array $options = array())
     {
-        return '';
+        return http_build_query($messages->all($domain), '', '&');
     }
 
     protected function getExtension()

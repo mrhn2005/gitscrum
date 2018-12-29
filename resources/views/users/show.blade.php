@@ -1,11 +1,11 @@
-@section('title',  trans('Profile') . ' - ' . $user->username)
+@section('title',  trans('gitscrum.profile') . ' - ' . $user->username)
 
 @extends('layouts.master')
 
 @section('breadcrumb')
 
 <div class="col-lg-6">
-    <h3>{{trans('Profile')}}</h3>
+    <h3>{{trans('gitscrum.profile')}}</h3>
 </div>
 
 <div class="col-lg-6 text-right">
@@ -27,6 +27,10 @@
 
             <div class="clearfix"></div>
 
+            @include('partials.forms.slack')
+            
+            <div class="clearfix"></div>
+
             @each('partials.lists.activities-complete', $activities, 'activity', 'partials.lists.no-items')
 
         </div>
@@ -46,7 +50,7 @@
                     <div class="tile mbn pbn">
                         <i class="fa fa-list fa-4x" aria-hidden="true"></i>
                         <h3 class="tile-title mtm">{{$user->sprints()->count()}}</h3>
-                        <p class="pbm">{{trans('Cooperation')}}</p>
+                        <p class="pbm">{{trans('gitscrum.cooperation')}}</p>
                     </div>
                 </div>
 
@@ -54,7 +58,7 @@
                     <div class="tile mbn pbn">
                         <i class="fa fa-th fa-4x" aria-hidden="true"></i>
                         <h3 class="tile-title mtm">{{$user->issues()->count()}}</h3>
-                        <p class="pbm">{{trans('Issues Done')}}</p>
+                        <p class="pbm">{{trans('gitscrum.issues-done')}}</p>
                     </div>
                 </div>
 
@@ -62,7 +66,7 @@
                     <div class="tile mbn pbn">
                         <i class="fa fa-list fa-4x" aria-hidden="true"></i>
                         <h3 class="tile-title mtm">{{$user->sprints()->count()}}</h3>
-                        <p class="pbm">{{trans('Commits')}}</p>
+                        <p class="pbm">{{trans('gitscrum.commits')}}</p>
                     </div>
                 </div>
 

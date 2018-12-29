@@ -1,19 +1,16 @@
 <?php
-/**
- * GitScrum v0.1.
- *
- * @author  Renato Marinho <renato.marinho@s2move.com>
- * @license http://opensource.org/licenses/GPL-3.0 GPLv3
- */
 
 namespace GitScrum\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use GitScrum\Scopes\GlobalScope;
+use GitScrum\Presenters\GlobalPresenter;
 
 class Favorite extends Model
 {
     use GlobalScope;
+    use GlobalPresenter;
+
     /**
      * The database table used by the model.
      *
@@ -28,11 +25,6 @@ class Favorite extends Model
      */
     protected $fillable = ['favoriteable_type', 'favoriteable_id', 'user_id'];
 
-    protected static function boot()
-    {
-        parent::boot();
-    }
-
     public function favoriteable()
     {
         return $this->morphTo('favoriteable');
@@ -40,6 +32,6 @@ class Favorite extends Model
 
     public function user()
     {
-        return $this->belongsTo(\GitScrum\Models\User::class, 'user_id', 'id');
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 }

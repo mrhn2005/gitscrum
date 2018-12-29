@@ -1,7 +1,9 @@
 Guzzle, PHP HTTP client
 =======================
 
-[![Build Status](https://travis-ci.org/guzzle/guzzle.svg?branch=master)](https://travis-ci.org/guzzle/guzzle)
+[![Latest Version](https://img.shields.io/github/release/guzzle/guzzle.svg?style=flat-square)](https://github.com/guzzle/guzzle/releases)
+[![Build Status](https://img.shields.io/travis/guzzle/guzzle.svg?style=flat-square)](https://travis-ci.org/guzzle/guzzle)
+[![Total Downloads](https://img.shields.io/packagist/dt/guzzlehttp/guzzle.svg?style=flat-square)](https://packagist.org/packages/guzzlehttp/guzzle)
 
 Guzzle is a PHP HTTP client that makes it easy to send HTTP requests and
 trivial to integrate with web services.
@@ -38,7 +40,7 @@ $promise->wait();
 ## Help and docs
 
 - [Documentation](http://guzzlephp.org/)
-- [stackoverflow](http://stackoverflow.com/questions/tagged/guzzle)
+- [Stack Overflow](http://stackoverflow.com/questions/tagged/guzzle)
 - [Gitter](https://gitter.im/guzzle/guzzle)
 
 

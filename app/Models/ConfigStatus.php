@@ -1,19 +1,17 @@
 <?php
-/**
- * GitScrum v0.1.
- *
- * @author  Renato Marinho <renato.marinho@s2move.com>
- * @license http://opensource.org/licenses/GPL-3.0 GPLv3
- */
 
 namespace GitScrum\Models;
 
-use GitScrum\Scopes\ConfigStatusScope;
 use Illuminate\Database\Eloquent\Model;
+use GitScrum\Scopes\ConfigStatusScope;
+use GitScrum\Scopes\GlobalScope;
+use GitScrum\Presenters\GlobalPresenter;
 
 class ConfigStatus extends Model
 {
     use ConfigStatusScope;
+    use GlobalScope;
+    use GlobalPresenter;
 
     /**
      * The database table used by the model.
@@ -47,7 +45,7 @@ class ConfigStatus extends Model
 
     public function users()
     {
-        return $this->belongsToMany(\GitScrum\Models\User::class, 'statuses', 'id', 'user_id');
+        return $this->belongsToMany(User::class, 'statuses', 'id', 'user_id');
     }
 
     public function status()
@@ -57,6 +55,6 @@ class ConfigStatus extends Model
 
     public function issue()
     {
-        return $this->belongsTo(\GitScrum\Models\Issue::class, 'config_status_id', 'id');
+        return $this->belongsTo(Issue::class, 'config_status_id', 'id');
     }
 }

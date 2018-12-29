@@ -1,10 +1,4 @@
 <?php
-/**
- * GitScrum v0.1.
- *
- * @author  Renato Marinho <renato.marinho@s2move.com>
- * @license http://opensource.org/licenses/GPL-3.0 GPLv3
- */
 
 namespace GitScrum\Http\Requests;
 
@@ -34,6 +28,7 @@ class SprintRequest extends FormRequest
             'title' => 'required|min:2|max:255',
             'date_start' => 'required',
             'date_finish' => 'required',
+            'product_backlog_id' => 'required|exists:product_backlogs,id',
         ];
     }
 
@@ -45,11 +40,13 @@ class SprintRequest extends FormRequest
     public function messages()
     {
         return [
-            'title.required' => trans('Title for Sprint cannot be blank'),
-            'title.min' => trans('Title must be at least 2 characters'),
-            'title.max' => trans('Title must be between 2 and 255 characters'),
-            'date_start.required' => trans('Date to start cannot be blank'),
-            'date_finish.required' => trans('Date to finish cannot be blank'),
+            'title.required' => trans('gitscrum.title-for-sprint-cannot-be-blank'),
+            'title.min' => trans('gitscrum.title-must-be-at-least-2-characters'),
+            'title.max' => trans('gitscrum.title-must-be-between-2-and-255-characters'),
+            'date_start.required' => trans('gitscrum.date-to-start-cannot-be-blank'),
+            'date_finish.required' => trans('gitscrum.date-to-finish-cannot-be-blank'),
+            'product_backlog_id.required' => trans('gitscrum.product-backlog-id-required'),
+            'product_backlog_id.exists' => trans('gitscrum.product-backlog-id-exists'),
         ];
     }
 

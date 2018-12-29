@@ -3,17 +3,18 @@
 namespace GitScrum\Classes;
 
 use Auth;
+use Carbon;
 use GitScrum\Models\Branch;
-use GitScrum\Models\Commit;
 use GitScrum\Models\User;
 use GitScrum\Models\Issue;
 use GitScrum\Models\Organization;
 use GitScrum\Models\ProductBacklog;
-use Carbon\Carbon;
 use GitScrum\Contracts\ProviderInterface;
 
 class Github implements ProviderInterface
 {
+    private $organization = [];
+
     public function tplUser($obj)
     {
         return [
@@ -149,27 +150,32 @@ class Github implements ProviderInterface
 
     public function organization($login)
     {
-        $organization = Organization::where('username', $login)
-            ->where('provider', 'github')->first();
+        if (!array_key_exists($login, $this->organization)) {
+            $organization = Organization::where('username', $login)
+                ->where('provider', 'github')->first();
 
-        if (!isset($organization)) {
-            $response = Helper::request('https://api.github.com/orgs/'.$login);
+            if (!isset($organization)) {
+                $response = Helper::request('https://api.github.com/orgs/'.$login);
 
-            if (!isset($response->id)) {
-                $response = Helper::request('https://api.github.com/users/'.$login);
+                if (!isset($response->id)) {
+                    $response = Helper::request('https://api.github.com/users/'.$login);
+                }
+
+                if (isset($response->id)) {
+                    $organization = Organization::create($this->tplOrganization($response));
+                }
             }
 
-            if (isset($response->id)) {
-                $organization = Organization::create($this->tplOrganization($response));
+            if (is_null($organization->users()->where('users_has_organizations.user_id', Auth::id())
+                ->where('users_has_organizations.organization_id', $organization->id)->first())) {
+                $organization->users()->attach(Auth::id());
             }
+            $this->organization[$login] = $organization;
+
+            return $organization->id;
         }
 
-        if (is_null($organization->users()->where('users_has_organizations.user_id', Auth::id())
-            ->where('users_has_organizations.organization_id', $organization->id)->first())) {
-            $organization->users()->attach(Auth::id());
-        }
-
-        return $organization->id;
+        return $this->organization[$login]->id;
     }
 
     public function readCollaborators($owner, $repo, $providerId = null)
@@ -223,10 +229,12 @@ class Github implements ProviderInterface
         $repos = $productBacklog->map(function ($repo) {
             $issues = collect(Helper::request('https://api.github.com/repos/'.$repo->organization->username.
                 DIRECTORY_SEPARATOR.$repo->title.'/issues?state=all'))->map(function ($issue) use ($repo) {
-                    $data = $this->tplIssue($issue, $repo->id);
+                    if (isset($issue->id)) {
+                        $data = $this->tplIssue($issue, $repo->id);
 
-                    if (!Issue::where('provider_id', $issue->id)->where('provider', 'github')->first()) {
-                        Issue::create($data)->users()->attach($data['user_id']);
+                        if (!Issue::where('provider_id', $issue->id)->where('provider', 'github')->first()) {
+                            Issue::create($data)->users()->attach($data['user_id']);
+                        }
                     }
                 });
         });
@@ -239,10 +247,14 @@ class Github implements ProviderInterface
             'body' => $obj->description,
         ];
 
-        $response = Helper::request('https://api.github.com/repos/'.
+        $response = Helper::request(
+            'https://api.github.com/repos/'.
             $obj->productBacklog->organization->username.DIRECTORY_SEPARATOR.
             $obj->productBacklog->title.'/issues'.(isset($obj->number) ? DIRECTORY_SEPARATOR.$obj->number : ''),
-            true, 'POST', $params);
+            true,
+            'POST',
+            $params
+        );
 
         return (object) $response;
     }
@@ -253,11 +265,15 @@ class Github implements ProviderInterface
             'body' => $obj->comment,
         ];
 
-        $response = Helper::request('https://api.github.com/repos/'.
+        $response = Helper::request(
+            'https://api.github.com/repos/'.
             $obj->issue->productBacklog->organization->username.DIRECTORY_SEPARATOR.
             $obj->issue->productBacklog->title.'/issues'.(isset($obj->provider_id) ? '' : DIRECTORY_SEPARATOR.$obj->issue->number).'/comments'.
             (isset($obj->provider_id) ? DIRECTORY_SEPARATOR.$obj->provider_id : ''),
-            true, $verb, $params);
+            true,
+            $verb,
+            $params
+        );
 
         return (object) $response;
     }

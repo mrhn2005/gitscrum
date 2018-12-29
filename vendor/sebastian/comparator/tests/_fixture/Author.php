@@ -1,6 +1,6 @@
 <?php
 /*
- * This file is part of the Comparator package.
+ * This file is part of sebastian/comparator.
  *
  * (c) Sebastian Bergmann <sebastian@phpunit.de>
  *
@@ -12,12 +12,11 @@ namespace SebastianBergmann\Comparator;
 
 /**
  * An author.
- *
  */
 class Author
 {
     // the order of properties is important for testing the cycle!
-    public $books = array();
+    public $books = [];
 
     private $name = '';
 

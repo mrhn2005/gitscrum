@@ -1539,7 +1539,7 @@ class PHP_CodeSniffer_File
                     $numTabs = strlen($tokens[$i]['content']);
 
                     $newContent   = '';
-                    $firstTabSize = ($tabWidth - ($currColumn % $tabWidth) + 1);
+                    $firstTabSize = ($tabWidth - (($currColumn - 1) % $tabWidth));
                     $length       = ($firstTabSize + ($tabWidth * ($numTabs - 1)));
                     $currColumn  += $length;
                     $newContent   = str_repeat(' ', $length);
@@ -1763,7 +1763,7 @@ class PHP_CodeSniffer_File
                 }
                 break;
             default:
-                continue;
+                continue 2;
             }//end switch
         }//end for
 
@@ -2258,7 +2258,7 @@ class PHP_CodeSniffer_File
                         // current scope opener, so it must be a string offset.
                         if (PHP_CODESNIFFER_VERBOSITY > 1) {
                             echo str_repeat("\t", $depth);
-                            echo '* ignoring curly brace *'.PHP_EOL;
+                            echo '* ignoring curly brace inside condition *'.PHP_EOL;
                         }
 
                         $ignore++;
@@ -2269,15 +2269,21 @@ class PHP_CodeSniffer_File
                             if (isset(PHP_CodeSniffer_Tokens::$emptyTokens[$tokens[$x]['code']]) === true) {
                                 continue;
                             } else {
-                                // If the first non-whitespace/comment token is a
-                                // variable or object operator then this is an opener
-                                // for a string offset and not a scope.
-                                if ($tokens[$x]['code'] === T_VARIABLE
-                                    || $tokens[$x]['code'] === T_OBJECT_OPERATOR
-                                ) {
+                                // If the first non-whitespace/comment token looks like this
+                                // brace is a string offset, or this brace is mid-way through
+                                // a new statement, it isn't a scope opener.
+                                $disallowed  = PHP_CodeSniffer_Tokens::$assignmentTokens;
+                                $disallowed += array(
+                                                T_VARIABLE         => true,
+                                                T_OBJECT_OPERATOR  => true,
+                                                T_COMMA            => true,
+                                                T_OPEN_PARENTHESIS => true,
+                                               );
+
+                                if (isset($disallowed[$tokens[$x]['code']]) === true) {
                                     if (PHP_CODESNIFFER_VERBOSITY > 1) {
                                         echo str_repeat("\t", $depth);
-                                        echo '* ignoring curly brace *'.PHP_EOL;
+                                        echo '* ignoring curly brace after condition *'.PHP_EOL;
                                     }
 
                                     $ignore++;
@@ -2650,31 +2656,35 @@ class PHP_CodeSniffer_File
 
 
     /**
-     * Returns the declaration names for T_CLASS, T_INTERFACE and T_FUNCTION tokens.
+     * Returns the declaration names for classes, interfaces, and functions.
      *
      * @param int $stackPtr The position of the declaration token which
-     *                      declared the class, interface or function.
+     *                      declared the class, interface, trait or function.
      *
      * @return string|null The name of the class, interface or function.
-     *                     or NULL if the function is a closure.
+     *                     or NULL if the function or class is anonymous.
      * @throws PHP_CodeSniffer_Exception If the specified token is not of type
-     *                                   T_FUNCTION, T_CLASS or T_INTERFACE.
+     *                                   T_FUNCTION, T_CLASS, T_ANON_CLASS,
+     *                                   T_TRAIT or T_INTERFACE.
      */
     public function getDeclarationName($stackPtr)
     {
         $tokenCode = $this->_tokens[$stackPtr]['code'];
+
+        if ($tokenCode === T_ANON_CLASS) {
+            return null;
+        }
+
+        if ($tokenCode === T_CLOSURE) {
+            return null;
+        }
+
         if ($tokenCode !== T_FUNCTION
             && $tokenCode !== T_CLASS
             && $tokenCode !== T_INTERFACE
             && $tokenCode !== T_TRAIT
         ) {
             throw new PHP_CodeSniffer_Exception('Token type "'.$this->_tokens[$stackPtr]['type'].'" is not T_FUNCTION, T_CLASS, T_INTERFACE or T_TRAIT');
-        }
-
-        if ($tokenCode === T_FUNCTION
-            && $this->isAnonymousFunction($stackPtr) === true
-        ) {
-            return null;
         }
 
         $content = null;
@@ -2736,15 +2746,17 @@ class PHP_CodeSniffer_File
 
 
     /**
-     * Returns the method parameters for the specified T_FUNCTION token.
+     * Returns the method parameters for the specified function token.
      *
      * Each parameter is in the following format:
      *
      * <code>
      *   0 => array(
+     *         'token'             => int,     // The position of the var in the token stack.
      *         'name'              => '$var',  // The variable name.
      *         'content'           => string,  // The full content of the variable definition.
      *         'pass_by_reference' => boolean, // Is the variable passed by reference?
+     *         'variable_length'   => boolean, // Is the param of variable length through use of `...` ?
      *         'type_hint'         => string,  // The type hint for the variable.
      *         'nullable_type'     => boolean, // Is the variable using a nullable type?
      *        )
@@ -2753,17 +2765,19 @@ class PHP_CodeSniffer_File
      * Parameters with default values have an additional array index of
      * 'default' with the value of the default as a string.
      *
-     * @param int $stackPtr The position in the stack of the T_FUNCTION token
+     * @param int $stackPtr The position in the stack of the function token
      *                      to acquire the parameters for.
      *
      * @return array
      * @throws PHP_CodeSniffer_Exception If the specified $stackPtr is not of
-     *                                   type T_FUNCTION.
+     *                                   type T_FUNCTION or T_CLOSURE.
      */
     public function getMethodParameters($stackPtr)
     {
-        if ($this->_tokens[$stackPtr]['code'] !== T_FUNCTION) {
-            throw new PHP_CodeSniffer_Exception('$stackPtr must be of type T_FUNCTION');
+        if ($this->_tokens[$stackPtr]['code'] !== T_FUNCTION
+            && $this->_tokens[$stackPtr]['code'] !== T_CLOSURE
+        ) {
+            throw new PHP_CodeSniffer_Exception('$stackPtr must be of type T_FUNCTION or T_CLOSURE');
         }
 
         $opener = $this->_tokens[$stackPtr]['parenthesis_opener'];
@@ -2855,7 +2869,7 @@ class PHP_CodeSniffer_File
                     $typeHint .= $this->_tokens[$i]['content'];
                 }
                 break;
-            case T_INLINE_THEN:
+            case T_NULLABLE:
                 if ($defaultStart === null) {
                     $nullableType = true;
                     $typeHint    .= $this->_tokens[$i]['content'];
@@ -2866,19 +2880,16 @@ class PHP_CodeSniffer_File
                 // If it's null, then there must be no parameters for this
                 // method.
                 if ($currVar === null) {
-                    continue;
+                    continue 2;
                 }
 
                 $vars[$paramCount]            = array();
+                $vars[$paramCount]['token']   = $currVar;
                 $vars[$paramCount]['name']    = $this->_tokens[$currVar]['content'];
                 $vars[$paramCount]['content'] = trim($this->getTokensAsString($paramStart, ($i - $paramStart)));
 
                 if ($defaultStart !== null) {
-                    $vars[$paramCount]['default']
-                        = $this->getTokensAsString(
-                            $defaultStart,
-                            ($i - $defaultStart)
-                        );
+                    $vars[$paramCount]['default'] = trim($this->getTokensAsString($defaultStart, ($i - $defaultStart)));
                 }
 
                 $vars[$paramCount]['pass_by_reference'] = $passByReference;
@@ -3027,6 +3038,7 @@ class PHP_CodeSniffer_File
         $ptr        = array_pop($conditions);
         if (isset($this->_tokens[$ptr]) === false
             || ($this->_tokens[$ptr]['code'] !== T_CLASS
+            && $this->_tokens[$ptr]['code'] !== T_ANON_CLASS
             && $this->_tokens[$ptr]['code'] !== T_TRAIT)
         ) {
             if (isset($this->_tokens[$ptr]) === true
@@ -3710,7 +3722,9 @@ class PHP_CodeSniffer_File
             return false;
         }
 
-        if ($this->_tokens[$stackPtr]['code'] !== T_CLASS) {
+        if ($this->_tokens[$stackPtr]['code'] !== T_CLASS
+            && $this->_tokens[$stackPtr]['code'] !== T_ANON_CLASS
+        ) {
             return false;
         }
 
@@ -3759,7 +3773,9 @@ class PHP_CodeSniffer_File
             return false;
         }
 
-        if ($this->_tokens[$stackPtr]['code'] !== T_CLASS) {
+        if ($this->_tokens[$stackPtr]['code'] !== T_CLASS
+            && $this->_tokens[$stackPtr]['code'] !== T_ANON_CLASS
+        ) {
             return false;
         }
 

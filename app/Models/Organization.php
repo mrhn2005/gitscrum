@@ -1,21 +1,17 @@
 <?php
-/**
- * GitScrum v0.1.
- *
- * @author  Renato Marinho <renato.marinho@s2move.com>
- * @license http://opensource.org/licenses/GPL-3.0 GPLv3
- */
 
 namespace GitScrum\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use GitScrum\Scopes\GlobalScope;
+use GitScrum\Presenters\GlobalPresenter;
 
 class Organization extends Model
 {
     use SoftDeletes;
     use GlobalScope;
+    use GlobalPresenter;
 
     /**
      * The database table used by the model.
@@ -50,12 +46,12 @@ class Organization extends Model
 
     public function users()
     {
-        return $this->belongsToMany(\GitScrum\Models\User::class, 'users_has_organizations')
+        return $this->belongsToMany(User::class, 'users_has_organizations')
             ->withTimestamps();
     }
 
     public function productBacklog()
     {
-        return $this->hasMany(\GitScrum\Models\ProductBacklog::class, 'organization_id', 'id');
+        return $this->hasMany(ProductBacklog::class, 'organization_id', 'id');
     }
 }

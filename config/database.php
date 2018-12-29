@@ -1,23 +1,17 @@
 <?php
-/**
- * GitScrum v0.1.
- *
- * @author  Renato Marinho <renato.marinho@s2move.com>
- * @license http://opensource.org/licenses/GPL-3.0 GPLv3
- */
 
 return [
 
     'relation' => [
-        'attachment' => \GitScrum\Models\Attachment::class,
-        'label' => \GitScrum\Models\Label::class,
-        'comment' => \GitScrum\Models\Comment::class,
-        'note' => \GitScrum\Models\Note::class,
-        'issue' => \GitScrum\Models\Issue::class,
-        'product_backlog' => \GitScrum\Models\ProductBacklog::class,
-        'sprint' => \GitScrum\Models\Sprint::class,
-        'user' => \GitScrum\Models\User::class,
-        'user_story' => \GitScrum\Models\UserStory::class,
+        'attachments' => \GitScrum\Models\Attachment::class,
+        'labels' => \GitScrum\Models\Label::class,
+        'comments' => \GitScrum\Models\Comment::class,
+        'notes' => \GitScrum\Models\Note::class,
+        'issues' => \GitScrum\Models\Issue::class,
+        'product_backlogs' => \GitScrum\Models\ProductBacklog::class,
+        'sprints' => \GitScrum\Models\Sprint::class,
+        'users' => \GitScrum\Models\User::class,
+        'user_stories' => \GitScrum\Models\UserStory::class,
     ],
 
     /*
@@ -64,18 +58,10 @@ return [
 
     'connections' => [
 
-        'testing' => [
-            'driver' => 'mysql',
-            'host' => env('DB_HOST', 'localhost'),
-            'port' => env('DB_PORT', '3306'),
-            'database' => env('DB_DATABASE'),
-            'username' => env('DB_USERNAME'),
-            'password' => env('DB_PASSWORD'),
-            'charset' => 'utf8',
-            'collation' => 'utf8_unicode_ci',
+        'sqlite' => [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
             'prefix' => '',
-            'strict' => true,
-            'engine' => null,
         ],
 
         'mysql' => [

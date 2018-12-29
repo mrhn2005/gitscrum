@@ -13,28 +13,30 @@ class SocialiteWasCalled
     const SERVICE_CONTAINER_PREFIX = 'SocialiteProviders.config.';
 
     /**
-     * @var LaravelApp
+     * @var \Illuminate\Container\Container
      */
     protected $app;
 
     /**
-     * @var ConfigRetrieverInterface
+     * @var \SocialiteProviders\Manager\Contracts\Helpers\ConfigRetrieverInterface
      */
     private $configRetriever;
 
     /**
      * @var bool
      */
-    public static $spoofedConfig = false;
+    private $spoofedConfig = [
+        'client_id'     => 'spoofed_client_id',
+        'client_secret' => 'spoofed_client_secret',
+        'redirect'      => 'spoofed_redirect',
+    ];
 
     /**
-     * @param LaravelApp               $app
-     * @param ConfigRetrieverInterface $configRetriever
+     * @param \Illuminate\Container\Container $app
      */
-    public function __construct(Application $app, ConfigRetrieverInterface $configRetriever)
+    public function __construct(Application $app)
     {
         $this->app = $app;
-        $this->configRetriever = $configRetriever;
     }
 
     /**
@@ -44,16 +46,23 @@ class SocialiteWasCalled
      *                              Laravel\Socialite\One\AbstractProvider
      * @param string $oauth1Server  'Your\Name\Space\ClassNameServer' must extend League\OAuth1\Client\Server\Server
      *
-     * @throws InvalidArgumentException
+     * @throws \InvalidArgumentException
      */
     public function extendSocialite($providerName, $providerClass, $oauth1Server = null)
     {
         /** @var SocialiteManager $socialite */
         $socialite = $this->app->make(\Laravel\Socialite\Contracts\Factory::class);
-        $provider = $this->buildProvider($socialite, $providerName, $providerClass, $oauth1Server);
+
+        $this->classExists($providerClass);
+        if ($this->isOAuth1($oauth1Server)) {
+            $this->classExists($oauth1Server);
+            $this->classExtends($providerClass, \Laravel\Socialite\One\AbstractProvider::class);
+        }
+
         $socialite->extend(
             $providerName,
-            function () use ($provider) {
+            function () use ($socialite, $providerName, $providerClass, $oauth1Server) {
+                $provider = $this->buildProvider($socialite, $providerName, $providerClass, $oauth1Server);
                 if (defined('SOCIALITEPROVIDERS_STATELESS') && SOCIALITEPROVIDERS_STATELESS) {
                     return $provider->stateless();
                 }
@@ -64,20 +73,16 @@ class SocialiteWasCalled
     }
 
     /**
-     * @param SocialiteManager $socialite
-     * @param                  $providerName
-     * @param string           $providerClass
-     * @param null|string      $oauth1Server
+     * @param \Laravel\Socialite\SocialiteManager $socialite
+     * @param                                     $providerName
+     * @param string                              $providerClass
+     * @param null|string                         $oauth1Server
      *
      * @return \Laravel\Socialite\One\AbstractProvider|\Laravel\Socialite\Two\AbstractProvider
      */
     protected function buildProvider(SocialiteManager $socialite, $providerName, $providerClass, $oauth1Server)
     {
-        $this->classExists($providerClass);
-
         if ($this->isOAuth1($oauth1Server)) {
-            $this->classExists($oauth1Server);
-
             return $this->buildOAuth1Provider($socialite, $providerClass, $providerName, $oauth1Server);
         }
 
@@ -90,12 +95,12 @@ class SocialiteWasCalled
      * @param string $providerClass must extend Laravel\Socialite\One\AbstractProvider
      * @param string $oauth1Server  must extend League\OAuth1\Client\Server\Server
      * @param array  $config
+     * @param mixed  $providerName
      *
      * @return \Laravel\Socialite\One\AbstractProvider
      */
     protected function buildOAuth1Provider(SocialiteManager $socialite, $providerClass, $providerName, $oauth1Server)
     {
-        $this->classExtends($providerClass, \Laravel\Socialite\One\AbstractProvider::class);
         $this->classExtends($oauth1Server, \League\OAuth1\Client\Server\Server::class);
 
         $config = $this->getConfig($providerClass, $providerName);
@@ -117,6 +122,7 @@ class SocialiteWasCalled
      * @param SocialiteManager $socialite
      * @param string           $providerClass must extend Laravel\Socialite\Two\AbstractProvider
      * @param array            $config
+     * @param mixed            $providerName
      *
      * @return \Laravel\Socialite\Two\AbstractProvider
      */
@@ -137,41 +143,25 @@ class SocialiteWasCalled
      * @param string $providerClass
      * @param string $providerName
      *
-     * @throws MissingConfigException
+     * @throws \SocialiteProviders\Manager\Exception\MissingConfigException
      *
      * @return array
      */
     protected function getConfig($providerClass, $providerName)
     {
-        $config = null;
-        $additionalConfigKeys = $providerClass::additionalConfigKeys();
-        $exceptionMessages = [];
         try {
-            $config = $this->configRetriever->fromEnv($providerClass::IDENTIFIER, $additionalConfigKeys);
-
-            // We will use the $spoofedConfig variable for now as a way to find out if there was no
-            // configuration in the .env file which means we should not return anything and jump
-            // to the service config check to check if something can be found there.
-            if (!static::$spoofedConfig) {
-                return $config;
-            }
+            return resolve(ConfigRetrieverInterface::class)->fromServices(
+                $providerName, $providerClass::additionalConfigKeys()
+            );
         } catch (MissingConfigException $e) {
-            $exceptionMessages[] = $e->getMessage();
+            throw new MissingConfigException($e->getMessage());
         }
 
-        $config = null;
-        try {
-            $config = $this->configRetriever->fromServices($providerName, $additionalConfigKeys);
-
-            // Here we don't need to check for the $spoofedConfig variable because this will be
-            // the end of checking for config and should contain either the proper data or an
-            // array containing spoofed values.
-            return $config;
-        } catch (MissingConfigException $e) {
-            $exceptionMessages[] = $e->getMessage();
-        }
-
-        throw new MissingConfigException(implode(PHP_EOL, $exceptionMessages));
+        return new Config(
+            $this->spoofedConfig['client_id'],
+            $this->spoofedConfig['client_secret'],
+            $this->spoofedConfig['redirect']
+        );
     }
 
     /**
@@ -190,20 +180,24 @@ class SocialiteWasCalled
      * @param string $class
      * @param string $baseClass
      *
-     * @throws InvalidArgumentException
+     * @throws \InvalidArgumentException
      */
     private function classExtends($class, $baseClass)
     {
         if (false === is_subclass_of($class, $baseClass)) {
-            $message = $class.' does not extend '.$baseClass;
-            throw new InvalidArgumentException($message);
+            throw new InvalidArgumentException("{$class} does not extend {$baseClass}");
         }
     }
 
+    /**
+     * @param string $providerClass
+     *
+     * @throws \InvalidArgumentException
+     */
     private function classExists($providerClass)
     {
         if (!class_exists($providerClass)) {
-            throw new InvalidArgumentException("$providerClass doesn't exist");
+            throw new InvalidArgumentException("{$providerClass} doesn't exist");
         }
     }
 }

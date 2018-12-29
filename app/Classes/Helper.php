@@ -3,8 +3,10 @@
 namespace GitScrum\Classes;
 
 use Illuminate\Pagination\LengthAwarePaginator;
-use Carbon\Carbon;
+use GitScrum\Models\IssueType;
+use GitScrum\Models\ConfigIssueEffort;
 use Auth;
+use Carbon;
 
 class Helper
 {
@@ -68,6 +70,20 @@ class Helper
         return $arr;
     }
 
+    public static function issueTypes()
+    {
+        return IssueType::where('enabled', 1)
+            ->orderby('position', 'ASC')
+            ->get();
+    }
+
+    public static function issueEfforts()
+    {
+        return ConfigIssueEffort::where('enabled', 1)
+            ->orderby('position', 'ASC')
+            ->get();
+    }
+
     public static function request($url, $auth = true, $customRequest = null, $postFields = null)
     {
         $user = Auth::user();
@@ -86,7 +102,7 @@ class Helper
         }
 
         if (env('PROXY_USER')) {
-            curl_setopt($ch, CURLOPT_PROXYUSERPWD, env('PROXY_USER').':'.env('PROXY_USER'));
+            curl_setopt($ch, CURLOPT_PROXYUSERPWD, env('PROXY_USER').':'.env('PROXY_PASS'));
         }
 
         if (!is_null($postFields)) {
@@ -97,13 +113,15 @@ class Helper
                 'Content-Length: '.strlen($postFields), ]);
         }
 
-        //curl_setopt($ch, CURLOPT_HTTPHEADER,  ['Authorization: Bearer OAUTH-TOKEN']);
+        if (strtolower($user->provider) == 'bitbucket') {
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer '.$user->token]);
+        }
 
         if (!is_null($customRequest)) {
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $customRequest); //'PATCH'
         }
 
-        if ($auth && isset($user->username)) {
+        if ($auth && isset($user->username) && strtolower($user->provider) != 'bitbucket') {
             curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
             curl_setopt($ch, CURLOPT_USERPWD, $user->username.':'.$user->token);
         }
@@ -118,7 +136,10 @@ class Helper
     public static function lengthAwarePaginator($collection, $page = 1)
     {
         $page = intval($page)?intval($page):1;
-        return new LengthAwarePaginator($collection->forPage($page, env('APP_PAGINATE')),
-            $collection->count(), env('APP_PAGINATE'));
+        return new LengthAwarePaginator(
+            $collection->forPage($page, env('APP_PAGINATE')),
+            $collection->count(),
+            env('APP_PAGINATE')
+        );
     }
 }

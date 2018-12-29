@@ -20,8 +20,8 @@ if (class_exists('PHP_CodeSniffer_Standards_AbstractScopeSniff', true) === false
 /**
  * Generic_Sniffs_NamingConventions_CamelCapsFunctionNameSniff.
  *
- * Ensures method names are correct depending on whether they are public
- * or private, and that functions are named correctly.
+ * Ensures method names and function names are in CamelCaps and
+ * that only magic methods/functions start with a double underscore.
  *
  * @category  PHP
  * @package   PHP_CodeSniffer
@@ -99,7 +99,7 @@ class Generic_Sniffs_NamingConventions_CamelCapsFunctionNameSniff extends PHP_Co
      */
     public function __construct()
     {
-        parent::__construct(array(T_CLASS, T_INTERFACE, T_TRAIT), array(T_FUNCTION), true);
+        parent::__construct(array(T_CLASS, T_ANON_CLASS, T_INTERFACE, T_TRAIT), array(T_FUNCTION), true);
 
     }//end __construct()
 

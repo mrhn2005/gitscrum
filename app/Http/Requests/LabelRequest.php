@@ -1,10 +1,4 @@
 <?php
-/**
- * GitScrum v0.1.
- *
- * @author  Renato Marinho <renato.marinho@s2move.com>
- * @license http://opensource.org/licenses/GPL-3.0 GPLv3
- */
 
 namespace GitScrum\Http\Requests;
 
@@ -42,8 +36,8 @@ class LabelRequest extends FormRequest
     public function messages()
     {
         return [
-            'title.required' => trans('Field cannot be blank'),
-            'title.min' => trans('Field must be at least 2 characters'),
+            'title.required' => trans('gitscrum.field-cannot-be-blank'),
+            'title.min' => trans('field-must-be-at-least-2-characters'),
         ];
     }
 }

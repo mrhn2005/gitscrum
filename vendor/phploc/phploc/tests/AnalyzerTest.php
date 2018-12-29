@@ -175,7 +175,31 @@ class AnalyserTest extends TestCase
         $this->assertEquals(1, $result['testClasses']);
     }
 
+    public function testFilesThatExtendPHPUnitTestCaseAreCountedAsTests2()
+    {
+        $result = $this->analyser->countFiles(
+            [
+                __DIR__ . '/_files/tests_old.php'
+            ],
+            true
+        );
+
+        $this->assertEquals(1, $result['testClasses']);
+    }
+
     public function testFilesThatIndirectlyExtendPHPUnitTestCaseAreCountedAsTests()
+    {
+        $result = $this->analyser->countFiles(
+            [
+                __DIR__ . '/_files/twoTestsThatIndirectlyExtendOldPHPUnitTestCase.php'
+            ],
+            true
+        );
+
+        $this->assertEquals(3, $result['testClasses']);
+    }
+
+    public function testFilesThatIndirectlyExtendPHPUnitTestCaseAreCountedAsTests2()
     {
         $result = $this->analyser->countFiles(
             [
@@ -238,7 +262,7 @@ class AnalyserTest extends TestCase
         $file   = __DIR__ . '/_files/issue_126/issue_126_' . $fileNumber . '.php';
         $result = $this->analyser->countFiles([$file], false);
 
-        $assertString = sprintf('Failed asserting that %s matches expected %s in issue_126_%d.php',
+        $assertString = \sprintf('Failed asserting that %s matches expected %s in issue_126_%d.php',
                             $result['cloc'],
                             $cloc,
                             $fileNumber
@@ -267,7 +291,7 @@ class AnalyserTest extends TestCase
      */
     public function testIssue138IsFixed()
     {
-        error_reporting(E_ALL);
+        \error_reporting(E_ALL);
 
         $result = $this->analyser->countFiles(
             [
@@ -284,7 +308,7 @@ class AnalyserTest extends TestCase
      */
     public function testIssue139IsFixed()
     {
-        error_reporting(E_ALL);
+        \error_reporting(E_ALL);
 
         $result = $this->analyser->countFiles(
             [

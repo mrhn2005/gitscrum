@@ -10,14 +10,13 @@ php:
 matrix:
   allow_failures:
     - php: hhvm
-    - php: 7.0
 
 install:
   - composer update --prefer-source
 
 script:
   - mkdir -p build/logs
-  - php vendor/bin/phpunit --coverage-clover=build/logs/clover.xml tests
+  - php vendor/bin/phpunit --coverage-clover=build/logs/clover.xml -c tests/phpunit.xml.dist
 
 after_script:
   - php vendor/bin/coveralls -v
